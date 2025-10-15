@@ -1,6 +1,7 @@
 <?php
 include('../config/db.php');
 $message = '';
+$redirect = false;
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = $_POST['name'];
@@ -28,7 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->bind_param("sss", $name, $email, $hashed_password);
 
             if ($stmt->execute()) {
-                $message = "success:Registration successful! <a href='login.php' class='underline font-medium'>Login here</a>";
+                $message = "success:Registration successful! Redirecting to login...";
+                $redirect = true;
             } else {
                 $message = "Error: " . $stmt->error;
             }
@@ -118,6 +120,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             background-color: #10b981;
             width: 100%;
         }
+        
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background-color: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #10b981;
+            width: 0%;
+            transition: width 2s linear;
+        }
+        
+        .redirecting {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 min-h-screen flex items-center justify-center p-4">
@@ -150,17 +177,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="flex-shrink-0">
                     <i class="fas <?= $isSuccess ? 'fa-check-circle text-green-500' : 'fa-exclamation-circle text-red-500' ?> mt-1"></i>
                 </div>
-                <div class="ml-3">
+                <div class="ml-3 flex-1">
                     <h3 class="text-sm font-medium <?= $isSuccess ? 'text-green-800' : 'text-red-800' ?>">
                         <?= $isSuccess ? 'Registration Successful' : 'Registration Failed' ?>
                     </h3>
                     <div class="mt-1 text-sm <?= $isSuccess ? 'text-green-700' : 'text-red-700' ?>">
                         <p><?= $isSuccess ? $messageText : $message ?></p>
+                        <?php if($isSuccess): ?>
+                        <div class="mt-2 flex items-center space-x-2 redirecting">
+                            <i class="fas fa-spinner fa-spin text-green-600"></i>
+                            <span class="text-green-600 text-xs">Redirecting to login page...</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
             <?php endif; ?>
             
+            <?php if(!$redirect): ?>
             <form method="POST" id="registerForm" class="space-y-5">
                 <!-- Name Field -->
                 <div>
@@ -276,6 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <i class="fas fa-user-plus ml-2"></i>
                 </button>
             </form>
+            <?php endif; ?>
             
             <!-- Divider -->
             <div class="mt-6">
@@ -313,150 +351,186 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script>
         // Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const toggleIcon = document.getElementById('toggleIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
-            }
-        });
+        const togglePassword = document.getElementById('togglePassword');
+        if (togglePassword) {
+            togglePassword.addEventListener('click', function() {
+                const passwordInput = document.getElementById('password');
+                const toggleIcon = document.getElementById('toggleIcon');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    toggleIcon.classList.remove('fa-eye');
+                    toggleIcon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    toggleIcon.classList.remove('fa-eye-slash');
+                    toggleIcon.classList.add('fa-eye');
+                }
+            });
+        }
         
         // Toggle confirm password visibility
-        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
-            const confirmPasswordInput = document.getElementById('confirm_password');
-            const toggleIcon = document.getElementById('toggleConfirmIcon');
-            
-            if (confirmPasswordInput.type === 'password') {
-                confirmPasswordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
-            } else {
-                confirmPasswordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
-            }
-        });
+        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        if (toggleConfirmPassword) {
+            toggleConfirmPassword.addEventListener('click', function() {
+                const confirmPasswordInput = document.getElementById('confirm_password');
+                const toggleIcon = document.getElementById('toggleConfirmIcon');
+                
+                if (confirmPasswordInput.type === 'password') {
+                    confirmPasswordInput.type = 'text';
+                    toggleIcon.classList.remove('fa-eye');
+                    toggleIcon.classList.add('fa-eye-slash');
+                } else {
+                    confirmPasswordInput.type = 'password';
+                    toggleIcon.classList.remove('fa-eye-slash');
+                    toggleIcon.classList.add('fa-eye');
+                }
+            });
+        }
         
         // Password strength indicator
-        document.getElementById('password').addEventListener('input', function() {
-            const password = this.value;
-            const strengthBar = document.getElementById('password-strength');
-            const feedback = document.getElementById('password-feedback');
-            const submitButton = document.getElementById('submitButton');
-            
-            // Reset
-            strengthBar.className = 'password-strength';
-            feedback.textContent = '';
-            
-            if (password.length === 0) {
-                return;
-            }
-            
-            // Calculate strength
-            let strength = 0;
-            let feedbackText = '';
-            
-            // Length check
-            if (password.length >= 8) strength += 1;
-            
-            // Contains lowercase
-            if (/[a-z]/.test(password)) strength += 1;
-            
-            // Contains uppercase
-            if (/[A-Z]/.test(password)) strength += 1;
-            
-            // Contains numbers
-            if (/[0-9]/.test(password)) strength += 1;
-            
-            // Contains special characters
-            if (/[^A-Za-z0-9]/.test(password)) strength += 1;
-            
-            // Update UI based on strength
-            switch(strength) {
-                case 0:
-                case 1:
-                    strengthBar.classList.add('strength-weak');
-                    feedbackText = 'Weak password';
-                    break;
-                case 2:
-                    strengthBar.classList.add('strength-fair');
-                    feedbackText = 'Fair password';
-                    break;
-                case 3:
-                    strengthBar.classList.add('strength-good');
-                    feedbackText = 'Good password';
-                    break;
-                case 4:
-                case 5:
-                    strengthBar.classList.add('strength-strong');
-                    feedbackText = 'Strong password';
-                    break;
-            }
-            
-            feedback.textContent = feedbackText;
-        });
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                const strengthBar = document.getElementById('password-strength');
+                const feedback = document.getElementById('password-feedback');
+                
+                // Reset
+                strengthBar.className = 'password-strength';
+                feedback.textContent = '';
+                
+                if (password.length === 0) {
+                    return;
+                }
+                
+                // Calculate strength
+                let strength = 0;
+                let feedbackText = '';
+                
+                // Length check
+                if (password.length >= 8) strength += 1;
+                
+                // Contains lowercase
+                if (/[a-z]/.test(password)) strength += 1;
+                
+                // Contains uppercase
+                if (/[A-Z]/.test(password)) strength += 1;
+                
+                // Contains numbers
+                if (/[0-9]/.test(password)) strength += 1;
+                
+                // Contains special characters
+                if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+                
+                // Update UI based on strength
+                switch(strength) {
+                    case 0:
+                    case 1:
+                        strengthBar.classList.add('strength-weak');
+                        feedbackText = 'Weak password';
+                        break;
+                    case 2:
+                        strengthBar.classList.add('strength-fair');
+                        feedbackText = 'Fair password';
+                        break;
+                    case 3:
+                        strengthBar.classList.add('strength-good');
+                        feedbackText = 'Good password';
+                        break;
+                    case 4:
+                    case 5:
+                        strengthBar.classList.add('strength-strong');
+                        feedbackText = 'Strong password';
+                        break;
+                }
+                
+                feedback.textContent = feedbackText;
+            });
+        }
         
         // Password match validation
-        document.getElementById('confirm_password').addEventListener('input', function() {
-            const password = document.getElementById('password').value;
-            const confirmPassword = this.value;
-            const matchIndicator = document.getElementById('password-match');
-            
-            if (confirmPassword.length === 0) {
-                matchIndicator.textContent = '';
-                return;
-            }
-            
-            if (password === confirmPassword) {
-                matchIndicator.textContent = 'Passwords match';
-                matchIndicator.className = 'text-xs text-green-600 mt-1';
-            } else {
-                matchIndicator.textContent = 'Passwords do not match';
-                matchIndicator.className = 'text-xs text-red-600 mt-1';
-            }
-        });
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', function() {
+                const password = document.getElementById('password').value;
+                const confirmPassword = this.value;
+                const matchIndicator = document.getElementById('password-match');
+                
+                if (confirmPassword.length === 0) {
+                    matchIndicator.textContent = '';
+                    return;
+                }
+                
+                if (password === confirmPassword) {
+                    matchIndicator.textContent = 'Passwords match';
+                    matchIndicator.className = 'text-xs text-green-600 mt-1';
+                } else {
+                    matchIndicator.textContent = 'Passwords do not match';
+                    matchIndicator.className = 'text-xs text-red-600 mt-1';
+                }
+            });
+        }
         
         // Form validation before submission
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
-            const terms = document.getElementById('terms').checked;
-            const buttonText = document.getElementById('buttonText');
-            
-            if (!terms) {
-                e.preventDefault();
-                alert('Please agree to the Terms of Service and Privacy Policy');
-                return;
-            }
-            
-            if (password !== confirmPassword) {
-                e.preventDefault();
-                document.getElementById('confirm_password').focus();
-                return;
-            }
-            
-            // Change button text to show loading state
-            buttonText.textContent = 'Creating Account...';
-        });
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            registerForm.addEventListener('submit', function(e) {
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+                const terms = document.getElementById('terms').checked;
+                const buttonText = document.getElementById('buttonText');
+                
+                if (!terms) {
+                    e.preventDefault();
+                    alert('Please agree to the Terms of Service and Privacy Policy');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    e.preventDefault();
+                    document.getElementById('confirm_password').focus();
+                    return;
+                }
+                
+                // Change button text to show loading state
+                buttonText.textContent = 'Creating Account...';
+            });
+        }
         
-        // Auto-hide message after 5 seconds (if not a success message with link)
-        const message = document.getElementById('message');
-        if (message && !message.innerHTML.includes('success:')) {
+        // Auto-redirect and progress bar for successful registration
+        const messageDiv = document.getElementById('message');
+        const progressFill = document.getElementById('progressFill');
+        
+        if (messageDiv && progressFill) {
+            // Start progress bar animation
             setTimeout(() => {
-                message.style.opacity = '0';
-                message.style.transition = 'opacity 0.5s ease';
+                progressFill.style.width = '100%';
+            }, 100);
+            
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = 'login.php';
+            }, 2000);
+        }
+        
+        // Auto-hide error message after 5 seconds
+        if (messageDiv && messageDiv.classList.contains('bg-red-50')) {
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                messageDiv.style.transition = 'opacity 0.5s ease';
                 setTimeout(() => {
-                    message.style.display = 'none';
+                    messageDiv.style.display = 'none';
                 }, 500);
             }, 5000);
         }
+
+        // If redirect flag is set, redirect immediately
+        <?php if($redirect): ?>
+        setTimeout(() => {
+            window.location.href = 'login.php';
+        }, 2000);
+        <?php endif; ?>
     </script>
-</body>
+</body> 
 </html>
