@@ -1,0 +1,12 @@
+body {
+  background: linear-gradient(135deg, #74ABE2, #5563DE);
+  font-family: 'Poppins', sans-serif;
+}
+
+.card {
+  border-radius: 15px;
+}
+
+.btn {
+  border-radius: 10px;
+}
