@@ -122,14 +122,6 @@ $stmt->close();
                     <i class="fas fa-users mr-3 text-lg text-gray-400"></i>
                     Manage Users
                 </a>
-                <a href="accounts.php" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg">
-                    <i class="fas fa-wallet mr-3 text-lg text-gray-400"></i>
-                    All Accounts
-                </a>
-                <a href="transactions.php" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg">
-                    <i class="fas fa-history mr-3 text-lg text-gray-400"></i>
-                    All Transactions
-                </a>
                 <a href="reports.php" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg">
                     <i class="fas fa-chart-bar mr-3 text-lg text-gray-400"></i>
                     Reports
